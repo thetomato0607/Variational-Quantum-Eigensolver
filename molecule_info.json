@@ -1,0 +1,18 @@
+{
+  "molecule": "H2",
+  "bond_length_angstrom": 0.735,
+  "basis_set": "sto-3g",
+  "num_qubits": 4,
+  "num_electrons": 2,
+  "num_spatial_orbitals": 2,
+  "num_pauli_terms": 15,
+  "nuclear_repulsion_energy": 0.7199689944,
+  "exact_electronic_energy": -1.8572750302,
+  "exact_total_energy": -1.1373060358,
+  "hartree_fock_energy": null,
+  "chemical_accuracy_threshold": 0.0016,
+  "notes": "Direct from your PySCF calculation output",
+  "units": "Hartree (atomic units)",
+  "source": "PySCF FCI calculation with STO-3G basis",
+  "pauli_terms_preview": "[('IIII', -0.81054798), ('IIIZ', 0.17218393), ('IIZI', -0.22575349)]..."
+}

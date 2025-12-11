@@ -1,0 +1,37 @@
+VQE EXPERIMENTAL REPORT
+================================================================================
+
+Timestamp: 2025-12-11 22:21:32
+
+SYSTEM CONFIGURATION
+--------------------------------------------------------------------------------
+Molecular system:      H2
+Bond length:           0.735 Angstrom
+Nuclear repulsion:     0.7199689944 Ha
+Reference energy:      -1.1373060358 Ha
+
+COMPUTATIONAL PARAMETERS
+--------------------------------------------------------------------------------
+Ansatz depth:          2
+Ansatz parameters:     24
+Circuit depth:         12
+Entanglement:          linear
+Initial state:         Hartree-Fock
+Optimizer:             COBYLA
+Max iterations:        200
+Shot noise:            None
+
+RESULTS
+--------------------------------------------------------------------------------
+VQE total energy:      -1.1179293417 Ha
+Reference energy:      -1.1373060358 Ha
+Absolute error:        +0.0193766941 Ha
+Error (kcal/mol):      +12.1589 kcal/mol
+Relative error:        1.703736 %
+Chemical accuracy:     False
+
+PERFORMANCE
+--------------------------------------------------------------------------------
+Total iterations:      200
+Function evaluations:  200
+Execution time:        0.43 seconds

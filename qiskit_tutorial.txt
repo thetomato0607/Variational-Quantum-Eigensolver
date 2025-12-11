@@ -1,0 +1,154 @@
+QISKIT: THE PHYSICS UNDERGRAD GUIDEGoal: Translate Quantum Mechanics into Quantum Circuits.
+MODULE 1: The Hilbert Space & CircuitsIn Qiskit, the "Circuit" is your laboratory. It holds your qubits (the state $|\psi\rangle$) and applies Unitary operations ($U$).
+1.1 The Quantum Circuit ($U$)In QM, time evolution is a Unitary operator: $|\psi_f\rangle = U_n ... U_2 U_1 |\psi_0\rangle$.
+In Qiskit, QuantumCircuit is the container for these $U$ operators.
+
+
+from qiskit import QuantumCircuit
+# Create a system with 2 Qubits and 2 Classical Bits (for measurement)
+# Physics: Initial state is always |00>
+qc = QuantumCircuit(2, 2) 
+
+1. Hadamard Gate (Basis change)
+# Physics: |0> -> (|0> + |1>) / sqrt(2)
+qc.h(0)  # Apply H to qubit 0
+
+2. CNOT Gate (Entanglement)
+# Physics: If Q0 is |1>, flip Q1. Creates Bell State.
+qc.cx(0, 1) # Control is Qubit 0, Target is Qubit 1
+
+# 3. Measurement (Collapse)
+# Physics: Projection onto Z-basis.
+qc.measure([0, 1], [0, 1]) # Measure Q0->Bit0, Q1->Bit1
+
+# Visualization (ASCII art - works offline!)
+print(qc.draw())
+
+1.2 The Wavefunction (Statevector)Standard Qiskit (without extra simulators) has a powerful Linear Algebra engine built-in called quantum_info. 
+#This is the most important module for you offline.
+
+from qiskit.quantum_info import Statevector
+# Create a circuit WITHOUT measurement to see the wavefunction
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+
+# Calculate the Statevector |psi>
+psi = Statevector(qc)
+
+# Print it in Dirac Notation (Ket)
+print(psi.draw('latex')) # Output: 1/√2 (|00> + |11>)
+print(psi.draw('text'))  # Output: [0.707, 0, 0, 0.707]
+
+MODULE 2: Observables & Hamiltonians ($H$)
+In VQE, you don't care about the final state $|\psi\rangle$ as much as you care about the Energy Expectation Value: $\langle H \rangle = \langle \psi | H | \psi \rangle$.
+2.1 Pauli OperatorsHamiltonians are sums of Pauli strings ($X, Y, Z, I$).$X = \begin{pmatrix} 0 & 1 \\ 1 & 0 \end{pmatrix}$ (Bit Flip)$Z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}$ (Phase Flip)
+
+from qiskit.quantum_info import SparsePauliOp
+# Example Hamiltonian: H = 0.5*Z(0)Z(1) + 0.1*X(0)
+# Note: Qiskit reads right-to-left! "ZI" means Z on qubit 0.
+H = SparsePauliOp.from_list([
+    ("ZZ", 0.5),  # Coefficient 0.5
+    ("XI", 0.1)   # Coefficient 0.1
+])
+
+# Convert to Matrix (if small enough) to check your math
+matrix_H = H.to_matrix()
+print(matrix_H)
+
+2.2 Expectation Values (The Measurement)To calculate Energy, you use the Statevector we learned in Module 1.
+# 1. Get the state |psi> from your circuit
+psi = Statevector(qc)
+# 2. Calculate Expectation Value <psi|H|psi>
+expectation = psi.expectation_value(H)
+print(f"Energy: {expectation.real} Hartree")
+
+MODULE 3: Variational Circuits (Parametric QM)
+This is the heart of VQE. We don't want a fixed circuit; we want a circuit with variables ($\theta$) that we can optimize.
+3.1 The Parameter ObjectInstead of hardcoding an angle (e.g., qc.ry(3.14, 0)), we use a placeholder.
+
+from qiskit.circuit import Parameter
+# Define a variable theta
+theta = Parameter('θ')
+qc = QuantumCircuit(1)
+# Rotation around Y-axis by theta
+# Physics: e^(-i * theta * Y / 2)
+qc.ry(theta, 0) 
+print(qc.draw())
+# Output:
+#      ┌───────┐
+# q_0: ┤ Ry(θ) ├
+#      └───────┘
+3.2 Binding ParametersYou cannot simulate a circuit with unknowns. You must "bind" the value before running.
+
+# Bind theta = 1.57 (Pi/2)
+bound_circuit = qc.bind_parameters({theta: 1.57})
+
+# Now you can calculate the Statevector of the bound circuit
+psi = Statevector(bound_circuit)
+
+MODULE 4: The Standard Library (Ansatz)
+You don't usually build VQE circuits gate-by-gate. You use the "Circuit Library" which contains pre-built ansatzes (Trial Wavefunctions).
+4.1 TwoLocal (Hardware Efficient)This is the industry standard for NISQ experiments.
+from qiskit.circuit.library import TwoLocal
+
+# Construct a trial wavefunction for 4 qubits
+ansatz = TwoLocal(
+    num_qubits=4,
+    rotation_blocks=['ry', 'rz'], # Single qubit rotations
+    entanglement_blocks='cz',     # Two-qubit entanglers
+    entanglement='linear',        # Topology: 0-1, 1-2, 2-3
+    reps=2                        # Depth (Layers)
+)
+
+# See how many parameters (thetas) it created
+print(f"Number of parameters: {ansatz.num_parameters}")
+print(ansatz.decompose().draw()) # .decompose() breaks the blocks into raw gates
+
+
+MODULE 5: Putting it Together (VQE Manual Loop)
+If you want to understand VQE deeply, write the loop yourself on the plane instead of using the VQE class. 
+It connects all the modules above.
+
+# 1. Define Hamiltonian (H)
+H = SparsePauliOp.from_list([("ZZ", 1.0), ("XX", 0.5)])
+
+# 2. Define Ansatz (|psi(theta)>)
+theta = Parameter('theta')
+qc = QuantumCircuit(2)
+qc.h(0)
+qc.cx(0, 1)
+qc.rx(theta, 0) # Variational part
+
+# 3. The Optimization Loop (Gradient Descent Manual)
+current_theta = 0.0
+learning_rate = 0.1
+
+print("Starting Manual Optimization...")
+for i in range(20):
+    # Bind parameter
+    temp_qc = qc.bind_parameters({theta: current_theta})
+    
+    # Calculate Energy
+    psi = Statevector(temp_qc)
+    energy = psi.expectation_value(H).real
+    
+    # Calculate Gradient (Finite Difference Method)
+    # E(theta + epsilon)
+    temp_qc_plus = qc.bind_parameters({theta: current_theta + 0.01})
+    energy_plus = Statevector(temp_qc_plus).expectation_value(H).real
+    gradient = (energy_plus - energy) / 0.01
+    
+    # Update Rule: theta_new = theta_old - (learning_rate * gradient)
+    current_theta = current_theta - (learning_rate * gradient)
+    
+    print(f"Step {i}: Angle={current_theta:.4f}, Energy={energy:.4f}")
+
+Gate Code,Matrix / Physics,Description
+qc.h(q),2​1​(11​1−1​),Hadamard: Creates Superposition. Transitions Z→X basis.
+qc.x(q),σx​ (Pauli X),NOT Gate: Flips $
+qc.z(q),σz​ (Pauli Z),Phase Gate: Flips phase of $
+"qc.rx(theta, q)",e−i2θ​X,Rotation X: Rotates state around Bloch Sphere X-axis.
+"qc.ry(theta, q)",e−i2θ​Y,Rotation Y: Rotates state around Bloch Sphere Y-axis (Real amplitudes).
+"qc.cx(c, t)",CNOT,Entangler: Flips target t if control c is $
+"qc.cz(c, t)","diag(1,1,1,−1)",Controlled-Z: Adds phase -1 only if state is $
