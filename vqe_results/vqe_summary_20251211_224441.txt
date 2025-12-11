@@ -1,7 +1,7 @@
 VQE EXPERIMENTAL REPORT
 ================================================================================
 
-Timestamp: 2025-12-11 22:23:28
+Timestamp: 2025-12-11 22:44:41
 
 SYSTEM CONFIGURATION
 --------------------------------------------------------------------------------
@@ -23,15 +23,15 @@ Shot noise:            None
 
 RESULTS
 --------------------------------------------------------------------------------
-VQE total energy:      -1.1195939339 Ha
+VQE total energy:      -1.1362640949 Ha
 Reference energy:      -1.1373060358 Ha
-Absolute error:        +0.0177121019 Ha
-Error (kcal/mol):      +11.1143 kcal/mol
-Relative error:        1.557373 %
-Chemical accuracy:     False
+Absolute error:        +0.0010419409 Ha
+Error (kcal/mol):      +0.6538 kcal/mol
+Relative error:        0.091615 %
+Chemical accuracy:     True
 
 PERFORMANCE
 --------------------------------------------------------------------------------
 Total iterations:      200
 Function evaluations:  200
-Execution time:        0.44 seconds
+Execution time:        2.19 seconds
