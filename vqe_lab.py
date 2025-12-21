@@ -35,7 +35,7 @@ from qiskit_algorithms.optimizers import COBYLA, SPSA, SLSQP
 # =============================================================================
 
 # Circuit Architecture
-ANSATZ_DEPTH = 2           # Number of ansatz repetitions
+ANSATZ_DEPTH = 1           # Number of ansatz repetitions
 ENTANGLEMENT = 'linear'    # Qubit connectivity topology
 USE_HF_INIT = True         # Initialize from Hartree-Fock reference state
 
@@ -44,7 +44,7 @@ OPTIMIZER = 'COBYLA'       # Classical optimization algorithm
 MAX_ITERATIONS = 200       # Maximum optimizer function evaluations
 
 # Measurement Simulation
-SHOTS = None               # Measurement shots (None = exact expectation values)
+SHOTS = 4096            # Measurement shots (None = exact expectation values)
 
 # Statistical Analysis
 RUN_MULTIPLE_TRIALS = False  # Execute multiple independent optimization runs

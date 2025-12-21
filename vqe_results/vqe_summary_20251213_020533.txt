@@ -1,7 +1,7 @@
 VQE EXPERIMENTAL REPORT
 ================================================================================
 
-Timestamp: 2025-12-11 22:44:41
+Timestamp: 2025-12-13 02:05:33
 
 SYSTEM CONFIGURATION
 --------------------------------------------------------------------------------
@@ -12,9 +12,9 @@ Reference energy:      -1.1373060358 Ha
 
 COMPUTATIONAL PARAMETERS
 --------------------------------------------------------------------------------
-Ansatz depth:          2
-Ansatz parameters:     24
-Circuit depth:         12
+Ansatz depth:          3
+Ansatz parameters:     32
+Circuit depth:         16
 Entanglement:          linear
 Initial state:         Hartree-Fock
 Optimizer:             COBYLA
@@ -23,15 +23,15 @@ Shot noise:            None
 
 RESULTS
 --------------------------------------------------------------------------------
-VQE total energy:      -1.1362640949 Ha
+VQE total energy:      -1.0676135431 Ha
 Reference energy:      -1.1373060358 Ha
-Absolute error:        +0.0010419409 Ha
-Error (kcal/mol):      +0.6538 kcal/mol
-Relative error:        0.091615 %
-Chemical accuracy:     True
+Absolute error:        +0.0696924927 Ha
+Error (kcal/mol):      +43.7320 kcal/mol
+Relative error:        6.127857 %
+Chemical accuracy:     False
 
 PERFORMANCE
 --------------------------------------------------------------------------------
 Total iterations:      200
 Function evaluations:  200
-Execution time:        2.19 seconds
+Execution time:        2.53 seconds
