@@ -4,265 +4,328 @@ VQE LIVE: REAL-TIME QUANTUM CHEMISTRY
 Uses PySCF to calculate H2 properties on the fly.
 UPDATED FOR QISKIT 1.0+ / 2.0+
 """
+from __future__ import annotations
+
+import argparse
+import csv
+from dataclasses import dataclass
+from pathlib import Path
+import os
+
 import numpy as np
+
+import matplotlib
+
+# Use a non-interactive backend when display isn't available.
+if not os.environ.get("DISPLAY"):
+    matplotlib.use("Agg")
+
 import matplotlib.pyplot as plt
 
-# Core imports
 from qiskit_nature.second_q.drivers import PySCFDriver
 from qiskit_nature.second_q.mappers import JordanWignerMapper
 from qiskit.circuit.library import TwoLocal
 from qiskit_algorithms import VQE, NumPyMinimumEigensolver
 from qiskit_algorithms.optimizers import COBYLA
 
-# FIXED: Use proper estimator based on Qiskit version
-try:
-    # Qiskit 1.0+ style
-    from qiskit.primitives import StatevectorEstimator
-    USE_NEW_API = True
-except ImportError:
-    # Fallback to older style
-    from qiskit.primitives import Estimator
-    USE_NEW_API = False
 
-print("=" * 60)
-print("VQE LIVE: CALCULATING H2 MOLECULE")
-print("=" * 60)
+@dataclass
+class VQEResults:
+    exact_total: float
+    exact_electronic: float
+    vqe_total: float
+    vqe_electronic: float
+    error_total: float
+    error_kcal: float
+    iterations: int
+    optimal_params: int
 
-# =============================================================================
-# CONFIGURATION
-# =============================================================================
-BOND_DISTANCE = 0.735  # Angstroms
-ANSATZ_DEPTH = 2
-MAX_ITERATIONS = 100
 
-print(f"\nConfiguration:")
-print(f"  Bond distance:  {BOND_DISTANCE} Angstrom")
-print(f"  Ansatz depth:   {ANSATZ_DEPTH}")
-print(f"  Max iterations: {MAX_ITERATIONS}")
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run a live VQE simulation for H2.")
+    parser.add_argument("--bond-distance", type=float, default=0.735, help="H-H distance in Angstroms")
+    parser.add_argument("--ansatz-depth", type=int, default=2, help="TwoLocal repetition depth")
+    parser.add_argument("--max-iterations", type=int, default=100, help="Optimizer iterations")
+    parser.add_argument("--output-dir", type=Path, default=Path("."), help="Directory for output artifacts")
+    parser.add_argument("--seed", type=int, default=1234, help="Random seed for reproducibility")
+    return parser.parse_args()
 
-# =============================================================================
-# STEP 1: QUANTUM CHEMISTRY CALCULATION (PYSCF)
-# =============================================================================
-print(f"\n1. Running PySCF for H2 at {BOND_DISTANCE} Angstroms...")
 
-driver = PySCFDriver(
-    atom=f"H 0.0 0.0 0.0; H 0.0 0.0 {BOND_DISTANCE}",
-    charge=0,
-    spin=0,
-    basis='sto-3g'
-)
+def get_estimator():
+    """Return an estimator compatible with the installed Qiskit version."""
+    try:
+        from qiskit.primitives import StatevectorEstimator
 
-# Run PySCF and get the problem
-problem = driver.run()
+        estimator = StatevectorEstimator()
+        estimator_name = "StatevectorEstimator"
+    except ImportError:
+        from qiskit.primitives import Estimator
 
-# Extract Hamiltonian and map to qubits
-hamiltonian_op = problem.hamiltonian.second_q_op()
-mapper = JordanWignerMapper()
-H_qubit = mapper.map(hamiltonian_op)
+        estimator = Estimator()
+        estimator_name = "Estimator"
 
-# Get nuclear repulsion
-E_nuclear = problem.nuclear_repulsion_energy
+    return estimator, estimator_name
 
-print(f"   PySCF calculation complete")
-print(f"   Number of qubits:     {H_qubit.num_qubits}")
-print(f"   Pauli terms:          {len(H_qubit)}")
-print(f"   Nuclear repulsion:    {E_nuclear:.8f} Ha")
 
-# =============================================================================
-# STEP 2: EXACT SOLUTION (CLASSICAL REFERENCE)
-# =============================================================================
-print("\n2. Calculating exact reference energy...")
+def build_problem(bond_distance: float):
+    driver = PySCFDriver(
+        atom=f"H 0.0 0.0 0.0; H 0.0 0.0 {bond_distance}",
+        charge=0,
+        spin=0,
+        basis="sto-3g",
+    )
+    return driver.run()
 
-exact_solver = NumPyMinimumEigensolver()
-result_exact = exact_solver.compute_minimum_eigenvalue(H_qubit)
-E_exact_electronic = result_exact.eigenvalue.real
-E_exact_total = E_exact_electronic + E_nuclear
 
-print(f"   Exact electronic:     {E_exact_electronic:.10f} Ha")
-print(f"   Exact total:          {E_exact_total:.10f} Ha")
+def run_exact_solution(qubit_op):
+    exact_solver = NumPyMinimumEigensolver()
+    result_exact = exact_solver.compute_minimum_eigenvalue(qubit_op)
+    return result_exact.eigenvalue.real
 
-# =============================================================================
-# STEP 3: VQE SETUP
-# =============================================================================
-print("\n3. Setting up VQE...")
 
-# Build ansatz (parameterized quantum circuit)
-ansatz = TwoLocal(
-    num_qubits=H_qubit.num_qubits,
-    rotation_blocks=['ry', 'rz'],
-    entanglement_blocks='cx',
-    entanglement='linear',
-    reps=ANSATZ_DEPTH
-)
+def run_vqe(qubit_op, ansatz, optimizer, estimator, e_nuclear, exact_total):
+    convergence_history: list[tuple[int, float]] = []
+    iteration_count = [0]
 
-print(f"   Ansatz parameters:    {ansatz.num_parameters}")
-print(f"   Circuit depth:        {ansatz.decompose().depth()}")
+    def progress_callback(eval_count, parameters, energy_mean, energy_std):
+        e_total = energy_mean + e_nuclear
+        convergence_history.append((eval_count, e_total))
+        iteration_count[0] = eval_count
 
-# Set up optimizer
-optimizer = COBYLA(maxiter=MAX_ITERATIONS)
+        if eval_count % 10 == 0 or eval_count == 1:
+            error = e_total - exact_total
+            print(
+                f"   Iteration {eval_count:3d}: E = {e_total:.8f} Ha, "
+                f"Error = {error:+.6f} Ha"
+            )
 
-# Set up estimator (handles Qiskit API differences)
-if USE_NEW_API:
-    estimator = StatevectorEstimator()
-    print(f"   Using: StatevectorEstimator")
-else:
-    estimator = Estimator()
-    print(f"   Using: Estimator")
+    vqe = VQE(
+        estimator=estimator,
+        ansatz=ansatz,
+        optimizer=optimizer,
+        callback=progress_callback,
+    )
 
-# Tracking
-convergence_history = []
-iteration_count = [0]  # Use list to modify in callback
+    result_vqe = vqe.compute_minimum_eigenvalue(qubit_op)
 
-def progress_callback(eval_count, parameters, energy_mean, energy_std):
-    """Track VQE progress at each iteration"""
-    E_total = energy_mean + E_nuclear
-    convergence_history.append(E_total)
-    iteration_count[0] = eval_count
-    
-    if eval_count % 10 == 0 or eval_count == 1:
-        error = E_total - E_exact_total
-        print(f"   Iteration {eval_count:3d}: E = {E_total:.8f} Ha, "
-              f"Error = {error:+.6f} Ha")
+    return result_vqe, convergence_history, iteration_count[0]
 
-# =============================================================================
-# STEP 4: RUN VQE OPTIMIZATION
-# =============================================================================
-print("\n4. Running VQE optimization...")
-print("   (This may take 1-3 minutes)\n")
 
-vqe = VQE(
-    estimator=estimator,
-    ansatz=ansatz,
-    optimizer=optimizer,
-    callback=progress_callback
-)
+def save_plot(output_dir: Path, bond_distance: float, ansatz_depth: int, exact_total: float,
+              convergence_history: list[tuple[int, float]], chem_accuracy: float):
+    iterations = [entry[0] for entry in convergence_history]
+    energies = [entry[1] for entry in convergence_history]
 
-result_vqe = vqe.compute_minimum_eigenvalue(H_qubit)
+    plt.figure(figsize=(10, 6))
+    plt.plot(iterations, energies, "b-", linewidth=2, label="VQE Energy")
+    plt.axhline(y=exact_total, color="r", linestyle="--", linewidth=2, label="Exact Energy")
 
-# Extract results
-E_vqe_electronic = result_vqe.eigenvalue.real
-E_vqe_total = E_vqe_electronic + E_nuclear
-error_total = E_vqe_total - E_exact_total
-error_kcal = error_total * 627.5
+    if iterations:
+        plt.fill_between(
+            iterations,
+            exact_total - chem_accuracy,
+            exact_total + chem_accuracy,
+            color="green",
+            alpha=0.2,
+            label="Chemical Accuracy (±1 kcal/mol)",
+        )
 
-# =============================================================================
-# STEP 5: RESULTS ANALYSIS
-# =============================================================================
-print("\n" + "=" * 60)
-print("RESULTS SUMMARY")
-print("=" * 60)
+    plt.xlabel("Iteration", fontsize=12)
+    plt.ylabel("Total Energy (Hartree)", fontsize=12)
+    plt.title(
+        f"VQE Convergence: H₂ at {bond_distance} Å (Depth={ansatz_depth})",
+        fontsize=14,
+    )
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
 
-print(f"\nEnergies (Hartree):")
-print(f"  VQE total energy:     {E_vqe_total:.10f} Ha")
-print(f"  Exact total energy:   {E_exact_total:.10f} Ha")
-print(f"  Absolute error:       {abs(error_total):.10f} Ha")
-print(f"  Error (kcal/mol):     {abs(error_kcal):.4f} kcal/mol")
+    filename = output_dir / f"vqe_live_{bond_distance}A.png"
+    plt.savefig(filename, dpi=150, bbox_inches="tight")
+    print(f"   Plot saved: {filename}")
+    return filename
 
-print(f"\nPerformance:")
-print(f"  Total iterations:     {iteration_count[0]}")
-print(f"  Optimal parameters:   {len(result_vqe.optimal_point)}")
 
-# Chemical accuracy check
-CHEM_ACCURACY = 0.0016  # 1 kcal/mol
-if abs(error_total) < CHEM_ACCURACY:
-    print(f"\nChemical accuracy:    Achieved")
-else:
-    print(f"\nChemical accuracy:    Not achieved")
-    print(f"  Target:               < {CHEM_ACCURACY:.6f} Ha")
-    print(f"  Current:              {abs(error_total):.6f} Ha")
+def save_convergence_csv(output_dir: Path, bond_distance: float, exact_total: float,
+                          convergence_history: list[tuple[int, float]]):
+    csv_filename = output_dir / f"vqe_convergence_{bond_distance}A.csv"
+    with csv_filename.open("w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Iteration", "Energy_Ha", "Error_Ha", "Error_kcal_mol"])
+        for iteration, energy in convergence_history:
+            err = energy - exact_total
+            writer.writerow([iteration, energy, err, err * 627.5])
 
-# =============================================================================
-# STEP 6: VISUALIZATION
-# =============================================================================
-print("\n5. Generating convergence plot...")
+    print(f"   Data saved: {csv_filename}")
+    return csv_filename
 
-plt.figure(figsize=(10, 6))
 
-# Plot VQE convergence
-iterations = list(range(1, len(convergence_history) + 1))
-plt.plot(iterations, convergence_history, 'b-', linewidth=2, label='VQE Energy')
+def save_summary(output_dir: Path, bond_distance: float, ansatz_depth: int, max_iterations: int,
+                 ansatz, results: VQEResults):
+    summary_filename = output_dir / f"vqe_summary_{bond_distance}A.txt"
+    with summary_filename.open("w") as f:
+        f.write("VQE CALCULATION SUMMARY\n")
+        f.write("=" * 60 + "\n\n")
+        f.write("System: H2 molecule\n")
+        f.write(f"Bond distance: {bond_distance} Angstrom\n")
+        f.write("Basis set: STO-3G\n\n")
+        f.write("VQE Configuration:\n")
+        f.write(f"  Ansatz depth:     {ansatz_depth}\n")
+        f.write(f"  Parameters:       {ansatz.num_parameters}\n")
+        f.write("  Optimizer:        COBYLA\n")
+        f.write(f"  Max iterations:   {max_iterations}\n\n")
+        f.write("Results:\n")
+        f.write(f"  VQE energy:       {results.vqe_total:.10f} Ha\n")
+        f.write(f"  Exact energy:     {results.exact_total:.10f} Ha\n")
+        f.write(f"  Error:            {results.error_total:+.10f} Ha\n")
+        f.write(f"  Error (kcal/mol): {results.error_kcal:+.4f} kcal/mol\n")
+        f.write(f"  Iterations:       {results.iterations}\n")
 
-# Plot exact reference
-plt.axhline(y=E_exact_total, color='r', linestyle='--', linewidth=2, 
-            label='Exact Energy')
+    print(f"   Summary saved: {summary_filename}")
+    return summary_filename
 
-# Chemical accuracy band
-plt.fill_between(iterations, 
-                 E_exact_total - CHEM_ACCURACY, 
-                 E_exact_total + CHEM_ACCURACY,
-                 color='green', alpha=0.2, 
-                 label='Chemical Accuracy (±1 kcal/mol)')
 
-# Labels and styling
-plt.xlabel('Iteration', fontsize=12)
-plt.ylabel('Total Energy (Hartree)', fontsize=12)
-plt.title(f'VQE Convergence: H₂ at {BOND_DISTANCE} Å (Depth={ANSATZ_DEPTH})', 
-          fontsize=14)
-plt.legend(fontsize=11)
-plt.grid(True, alpha=0.3)
+def main() -> int:
+    args = parse_args()
+    bond_distance = args.bond_distance
+    ansatz_depth = args.ansatz_depth
+    max_iterations = args.max_iterations
+    output_dir = args.output_dir
 
-# Save figure
-filename = f"vqe_live_{BOND_DISTANCE}A.png"
-plt.savefig(filename, dpi=150, bbox_inches='tight')
-print(f"   Plot saved: {filename}")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-plt.show()
+    print("=" * 60)
+    print("VQE LIVE: CALCULATING H2 MOLECULE")
+    print("=" * 60)
+    print("\nConfiguration:")
+    print(f"  Bond distance:  {bond_distance} Angstrom")
+    print(f"  Ansatz depth:   {ansatz_depth}")
+    print(f"  Max iterations: {max_iterations}")
 
-# =============================================================================
-# STEP 7: DATA EXPORT
-# =============================================================================
-print("\n6. Exporting data...")
+    print(f"\n1. Running PySCF for H2 at {bond_distance} Angstroms...")
+    problem = build_problem(bond_distance)
 
-# Save convergence data
-import csv
+    hamiltonian_op = problem.hamiltonian.second_q_op()
+    mapper = JordanWignerMapper()
+    qubit_op = mapper.map(hamiltonian_op)
 
-csv_filename = f"vqe_convergence_{BOND_DISTANCE}A.csv"
-with open(csv_filename, 'w', newline='') as f:
-    writer = csv.writer(f)
-    writer.writerow(['Iteration', 'Energy_Ha', 'Error_Ha', 'Error_kcal_mol'])
-    for i, energy in enumerate(convergence_history, 1):
-        err = energy - E_exact_total
-        writer.writerow([i, energy, err, err * 627.5])
+    e_nuclear = problem.nuclear_repulsion_energy
 
-print(f"   Data saved: {csv_filename}")
+    print("   PySCF calculation complete")
+    print(f"   Number of qubits:     {qubit_op.num_qubits}")
+    print(f"   Pauli terms:          {len(qubit_op)}")
+    print(f"   Nuclear repulsion:    {e_nuclear:.8f} Ha")
 
-# Save summary
-summary_filename = f"vqe_summary_{BOND_DISTANCE}A.txt"
-with open(summary_filename, 'w') as f:
-    f.write("VQE CALCULATION SUMMARY\n")
-    f.write("=" * 60 + "\n\n")
-    f.write(f"System: H2 molecule\n")
-    f.write(f"Bond distance: {BOND_DISTANCE} Angstrom\n")
-    f.write(f"Basis set: STO-3G\n\n")
-    f.write(f"VQE Configuration:\n")
-    f.write(f"  Ansatz depth:     {ANSATZ_DEPTH}\n")
-    f.write(f"  Parameters:       {ansatz.num_parameters}\n")
-    f.write(f"  Optimizer:        COBYLA\n")
-    f.write(f"  Max iterations:   {MAX_ITERATIONS}\n\n")
-    f.write(f"Results:\n")
-    f.write(f"  VQE energy:       {E_vqe_total:.10f} Ha\n")
-    f.write(f"  Exact energy:     {E_exact_total:.10f} Ha\n")
-    f.write(f"  Error:            {error_total:+.10f} Ha\n")
-    f.write(f"  Error (kcal/mol): {error_kcal:+.4f} kcal/mol\n")
-    f.write(f"  Iterations:       {iteration_count[0]}\n")
+    print("\n2. Calculating exact reference energy...")
+    e_exact_electronic = run_exact_solution(qubit_op)
+    e_exact_total = e_exact_electronic + e_nuclear
 
-print(f"   Summary saved: {summary_filename}")
+    print(f"   Exact electronic:     {e_exact_electronic:.10f} Ha")
+    print(f"   Exact total:          {e_exact_total:.10f} Ha")
 
-# =============================================================================
-# COMPLETION
-# =============================================================================
-print("\n" + "=" * 60)
-print("VQE CALCULATION COMPLETE")
-print("=" * 60)
+    print("\n3. Setting up VQE...")
+    ansatz = TwoLocal(
+        num_qubits=qubit_op.num_qubits,
+        rotation_blocks=["ry", "rz"],
+        entanglement_blocks="cx",
+        entanglement="linear",
+        reps=ansatz_depth,
+    )
 
-print(f"\nFiles generated:")
-print(f"  1. {filename}")
-print(f"  2. {csv_filename}")
-print(f"  3. {summary_filename}")
+    print(f"   Ansatz parameters:    {ansatz.num_parameters}")
+    print(f"   Circuit depth:        {ansatz.decompose().depth()}")
 
-print(f"\nFinal result:")
-print(f"  VQE:   {E_vqe_total:.8f} Ha")
-print(f"  Exact: {E_exact_total:.8f} Ha")
-print(f"  Error: {abs(error_total):.8f} Ha ({abs(error_kcal):.3f} kcal/mol)")
+    optimizer = COBYLA(maxiter=max_iterations)
+    estimator, estimator_name = get_estimator()
+    print(f"   Using: {estimator_name}")
 
-print("\n" + "=" * 60)
+    print("\n4. Running VQE optimization...")
+    print("   (This may take 1-3 minutes)\n")
+
+    result_vqe, convergence_history, iteration_count = run_vqe(
+        qubit_op,
+        ansatz,
+        optimizer,
+        estimator,
+        e_nuclear,
+        e_exact_total,
+    )
+
+    e_vqe_electronic = result_vqe.eigenvalue.real
+    e_vqe_total = e_vqe_electronic + e_nuclear
+    error_total = e_vqe_total - e_exact_total
+    error_kcal = error_total * 627.5
+
+    results = VQEResults(
+        exact_total=e_exact_total,
+        exact_electronic=e_exact_electronic,
+        vqe_total=e_vqe_total,
+        vqe_electronic=e_vqe_electronic,
+        error_total=error_total,
+        error_kcal=error_kcal,
+        iterations=iteration_count,
+        optimal_params=len(result_vqe.optimal_point),
+    )
+
+    print("\n" + "=" * 60)
+    print("RESULTS SUMMARY")
+    print("=" * 60)
+
+    print("\nEnergies (Hartree):")
+    print(f"  VQE total energy:     {results.vqe_total:.10f} Ha")
+    print(f"  Exact total energy:   {results.exact_total:.10f} Ha")
+    print(f"  Absolute error:       {abs(results.error_total):.10f} Ha")
+    print(f"  Error (kcal/mol):     {abs(results.error_kcal):.4f} kcal/mol")
+
+    print("\nPerformance:")
+    print(f"  Total iterations:     {results.iterations}")
+    print(f"  Optimal parameters:   {results.optimal_params}")
+
+    chem_accuracy = 0.0016
+    if abs(results.error_total) < chem_accuracy:
+        print("\nChemical accuracy:    Achieved")
+    else:
+        print("\nChemical accuracy:    Not achieved")
+        print(f"  Target:               < {chem_accuracy:.6f} Ha")
+        print(f"  Current:              {abs(results.error_total):.6f} Ha")
+
+    print("\n5. Generating convergence plot...")
+    plot_file = save_plot(
+        output_dir,
+        bond_distance,
+        ansatz_depth,
+        results.exact_total,
+        convergence_history,
+        chem_accuracy,
+    )
+
+    print("\n6. Exporting data...")
+    csv_file = save_convergence_csv(output_dir, bond_distance, results.exact_total, convergence_history)
+    summary_file = save_summary(
+        output_dir,
+        bond_distance,
+        ansatz_depth,
+        max_iterations,
+        ansatz,
+        results,
+    )
+
+    print("\n" + "=" * 60)
+    print("VQE CALCULATION COMPLETE")
+    print("=" * 60)
+
+    print("\nFiles generated:")
+    print(f"  1. {plot_file}")
+    print(f"  2. {csv_file}")
+    print(f"  3. {summary_file}")
+
+    print("\nFinal result:")
+    print(f"  VQE:   {results.vqe_total:.8f} Ha")
+    print(f"  Exact: {results.exact_total:.8f} Ha")
+    print(f"  Error: {abs(results.error_total):.8f} Ha ({abs(results.error_kcal):.3f} kcal/mol)")
+
+    print("\n" + "=" * 60)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

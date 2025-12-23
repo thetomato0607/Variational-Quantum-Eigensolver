@@ -1,0 +1,19 @@
+VQE CALCULATION SUMMARY
+============================================================
+
+System: H2 molecule
+Bond distance: 0.735 Angstrom
+Basis set: STO-3G
+
+VQE Configuration:
+  Ansatz depth:     2
+  Parameters:       24
+  Optimizer:        COBYLA
+  Max iterations:   100
+
+Results:
+  VQE energy:       -1.0653915602 Ha
+  Exact energy:     -1.1373060358 Ha
+  Error:            +0.0719144756 Ha
+  Error (kcal/mol): +45.1263 kcal/mol
+  Iterations:       100
