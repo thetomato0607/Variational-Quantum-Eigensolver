@@ -1,5 +1,5 @@
 from qiskit_aer.noise import NoiseModel, depolarizing_error
-from qiskit.primitives import BackendEstimator
+from qiskit.primitives import BackendEstimatorV2
 from qiskit_aer import AerSimulator
 
 def get_noisy_estimator(depolarizing_prob=0.01):
@@ -19,4 +19,4 @@ def get_noisy_estimator(depolarizing_prob=0.01):
     backend = AerSimulator(noise_model=noise_model)
     
     # Return a primitive that uses this noisy backend
-    return BackendEstimator(backend=backend)
+    return BackendEstimatorV2(backend=backend)
