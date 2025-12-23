@@ -25,7 +25,8 @@ for d in distances:
     print(f"\n--- Distance: {d} Å ---")
     
     # 1. Get Physics (Using your new module!)
-    H_op, nuc_rep, _, _ = get_h2_hamiltonian(d)
+    H_op, problem = get_h2_hamiltonian(d)
+    nuc_rep = problem.nuclear_repulsion_energy
     
     # 2. Exact Solution
     solver = NumPyMinimumEigensolver()
