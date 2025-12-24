@@ -46,6 +46,7 @@ for d in distances:
 # Plotting
 plt.plot(distances, exact_energies, 'k--', label='Exact')
 plt.plot(distances, vqe_energies, 'bo-', label='VQE')
+plt.title('The Dissociation Curve of Hydrogen Molecule')
 plt.xlabel('Distance (Å)')
 plt.ylabel('Energy (Ha)')
 plt.legend()
