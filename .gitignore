@@ -4,3 +4,4 @@ __pycache__/
 vqe_env/
 .vscode/
 .DS_Store
+setup_project.sh
