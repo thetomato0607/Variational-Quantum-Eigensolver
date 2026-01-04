@@ -1,20 +1,3 @@
-"""
-VQE Implementation: H2 Molecular Ground State Calculation
-=========================================================
-
-Implementation of the Variational Quantum Eigensolver algorithm for
-determining the ground state electronic energy of the hydrogen molecule.
-
-Features:
-- Exact statevector simulation with optional shot noise
-- Variance-based noise modeling for NISQ device simulation
-- Multi-trial statistical analysis
-- Complete parameter trajectory tracking
-- Comprehensive data export for post-processing
-
-Author: Research Implementation
-Date: 2024
-"""
 
 import pickle
 import numpy as np

@@ -1,10 +1,5 @@
 def calculate_h2_hamiltonian_with_pyscf():
-    """
-    This is the ACTUAL code that generates the correct H2 data.
-    Run this if you have PySCF installed.
-    """
-    
-    # Step 1: Import libraries
+
     from pyscf import gto, scf
     from qiskit_nature.second_q.drivers import PySCFDriver
     from qiskit_nature.second_q.mappers import JordanWignerMapper

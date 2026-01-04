@@ -1,14 +1,3 @@
-"""
-H2 Molecule Data Generator - FROM YOUR PYSCF CALCULATION
-=========================================================
-Using the actual results from your PySCF run!
-
-Your PySCF Results:
-  Nuclear repulsion:      0.7199689944 Ha
-  Electronic energy (FCI): -1.8572750302 Ha
-  Total energy:           -1.1373060358 Ha
-"""
-
 import pickle
 import json
 import numpy as np
@@ -17,12 +6,6 @@ print("=" * 80)
 print("H2 MOLECULE DATA GENERATOR - YOUR PYSCF RESULTS")
 print("=" * 80)
 
-# =============================================================================
-# YOUR ACTUAL PYSCF HAMILTONIAN
-# =============================================================================
-# These are the exact Pauli terms from your PySCF calculation
-# Order: ['IIII', 'IIIZ', 'IIZI', 'IZII', 'ZIII', 'IIZZ', 'IZIZ', 'ZIIZ', 
-#         'YYYY', 'XXYY', 'YYXX', 'XXXX', 'IZZI', 'ZIZI', 'ZZII']
 
 h2_hamiltonian = [
     ('IIII', -0.81054798),
@@ -42,9 +25,7 @@ h2_hamiltonian = [
     ('ZZII',  0.12091263),
 ]
 
-# =============================================================================
-# YOUR ACTUAL PYSCF ENERGIES
-# =============================================================================
+
 molecular_data = {
     # Basic info
     "molecule": "H2",
@@ -81,9 +62,7 @@ print(f"Basis set: {molecular_data['basis_set']}")
 print(f"Number of qubits: {molecular_data['num_qubits']}")
 print(f"Number of Pauli terms: {molecular_data['num_pauli_terms']}")
 
-# =============================================================================
-# VALIDATION - Verify your numbers make sense
-# =============================================================================
+
 print("\n" + "-" * 80)
 print("VALIDATION OF YOUR PYSCF RESULTS")
 print("-" * 80)
@@ -124,9 +103,7 @@ if all_checks_pass:
 else:
     print("\n⚠ Some validation checks failed - please verify your PySCF output")
 
-# =============================================================================
-# COMPARISON WITH LITERATURE
-# =============================================================================
+
 print("\n" + "-" * 80)
 print("COMPARISON WITH LITERATURE VALUES")
 print("-" * 80)
@@ -156,9 +133,7 @@ print(f"  Difference:    {abs(E_total - E_total_literature):.6f} Ha")
 if abs(E_total - E_total_literature) < 0.001:
     print("  ✓ Excellent match with published values!")
 
-# =============================================================================
-# SAVE DATA FILES
-# =============================================================================
+
 print("\n" + "-" * 80)
 print("SAVING DATA FILES")
 print("-" * 80)
@@ -185,9 +160,7 @@ with open("pauli_terms.txt", "w") as f:
         f.write(f"{pauli:6s}  {coeff:+.10f}\n")
 print("✓ Saved: pauli_terms.txt (human-readable Hamiltonian)")
 
-# =============================================================================
-# VERIFICATION TEST
-# =============================================================================
+
 print("\n" + "-" * 80)
 print("VERIFICATION TEST")
 print("-" * 80)
@@ -218,9 +191,7 @@ try:
 except Exception as e:
     print(f"⚠ Verification test failed: {e}")
 
-# =============================================================================
-# SUMMARY
-# =============================================================================
+
 print("\n" + "=" * 80)
 print("SUCCESS! DATA PACKAGE CREATED")
 print("=" * 80)
