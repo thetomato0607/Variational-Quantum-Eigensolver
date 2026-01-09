@@ -30,82 +30,85 @@ Executed on IBM Quantum cloud backend.
 
 
 ## 3. Repository Structure
-Variational-Quantum-Eigensolver
-│   ├── setup_project.sh
-│   ├── pyproject.toml
-│   ├── generate_tree.py
-│   ├── README.md
-│   ├── .pre-commit-config.yaml
-│   ├── requirements.txt
-│   ├── results/
-│   │   ├── h2/
-│   │   │   ├── figures/
-│   │   │   │   ├── accuracy_benchmark.png
-│   │   │   │   ├── noise_comparison.png
-│   │   │   │   ├── dissociation_curve.png
-│   │   │   │   ├── ansatz_comparison.png
-│   │   ├── tfim/
-│   │   │   ├── figures/
-│   │   │   │   ├── tfim_scan.png
-│   ├── .github/
-│   │   ├── workflows/
-│   ├── src/
-│   │   ├── vqe.egg-info/
-│   │   │   ├── dependency_links.txt
-│   │   │   ├── PKG-INFO
-│   │   │   ├── SOURCES.txt
-│   │   │   ├── top_level.txt
-│   │   ├── vqe/
-│   │   │   ├── measurement.py
-│   │   │   ├── plotting.py
-│   │   │   ├── config.py
-│   │   │   ├── metrics.py
-│   │   │   ├── utils.py
-│   │   │   ├── vqe_runner.py
-│   │   │   ├── __init__.py
-│   │   │   ├── hamiltonians/
-│   │   │   │   ├── tfim.py
-│   │   │   │   ├── h2.py
-│   │   │   │   ├── __init__.py
-│   │   │   ├── ansatz/
-│   │   │   │   ├── ucc_like.py
-│   │   │   │   ├── hardware_efficient.py
-│   │   │   │   ├── __init__.py
-│   │   │   ├── optimizers/
-│   │   │   │   ├── spsa.py
-│   │   │   │   ├── scipy_opt.py
-│   │   │   │   ├── __init__.py
-│   │   │   ├── backends/
-│   │   │   │   ├── shot_based.py
-│   │   │   │   ├── noisy.py
-│   │   │   │   ├── __init__.py
-│   │   │   │   ├── ideal.py
-│   ├── scripts/
-│   │   ├── run_h2_scan.py
-│   │   ├── run_tfim_grid.py
-│   │   ├── run_ansatz_comparison.py
-│   │   ├── run_noise_comparison.py
-│   │   ├── plot_benchmark.py
-│   ├── .claude/
-│   │   ├── settings.local.json
-│   ├── archive_offline/
-│   │   ├── flight_data.pkl
-│   │   ├── pauli_terms.txt
-│   │   ├── H2_data.py
-│   │   ├── qiskit_tutorial.txt
-│   │   ├── molecule_info.json
-│   │   ├── hello_vqe.py
-│   │   ├── vqe_lab.py
-│   │   ├── pyscf_data.py
-│   ├── vqe_env/
-│   │   ├── pyvenv.cfg
-│   │   ├── share/
-│   │   │   ├── man/
-│   │   │   │   ├── man1/
-│   │   │   │   │   ├── ttx.1
-│   ├── tests/
-│   │   ├── test_vqe_smoke.py
-│   │   ├── test_hamiltonians.py
-│   │   ├── test_expectation.py
-│   │   ├── test_ansatz.py
+```text
+Variational-Quantum-Eigensolver/
+├── src/
+│   ├── vqe/
+│   │   ├── measurement.py
+│   │   ├── plotting.py
+│   │   ├── config.py
+│   │   ├── metrics.py
+│   │   ├── utils.py
+│   │   ├── vqe_runner.py
+│   │   ├── hamiltonians/
+│   │   │   ├── tfim.py
+│   │   │   ├── h2.py
+│   │   ├── ansatz/
+│   │   │   ├── ucc_like.py
+│   │   │   ├── hardware_efficient.py
+│   │   ├── optimizers/
+│   │   │   ├── spsa.py
+│   │   │   ├── scipy_opt.py
+│   │   ├── backends/
+│   │   │   ├── shot_based.py
+│   │   │   ├── noisy.py
+│   │   │   ├── ideal.py
+├── scripts/
+│   ├── run_h2_scan.py
+│   ├── run_tfim_grid.py
+│   ├── run_ansatz_comparison.py
+│   ├── run_noise_comparison.py
+│   ├── plot_benchmark.py
+├── results/
+│   ├── h2/
+│   │   ├── figures/
+│   │   │   ├── accuracy_benchmark.png
+│   │   │   ├── noise_comparison.png
+│   │   │   ├── dissociation_curve.png
+│   │   │   ├── ansatz_comparison.png
+│   ├── tfim/
+│       ├── figures/
+│           ├── tfim_scan.png
+├── tests/
+│   ├── test_vqe_smoke.py
+│   ├── test_hamiltonians.py
+│   ├── test_expectation.py
+│   ├── test_ansatz.py
+├── requirements.txt
+├── README.md
+```
 
+## 4. Installation & Dependencies
+To ensure scientific reproducibility, this project uses specific versions of Qiskit and PySCF.
+
+Clone the repository:
+git clone https://github.com/thetomato0607/Variational-Quantum-Eigensolver.git
+cd Variational-Quantum-Eigensolver
+
+
+Create a virtual environment (Recommended):
+python -m venv vqe_env
+source vqe_env/bin/activate  # On Windows: vqe_env\Scripts\activate
+
+Install dependencies:
+pip install -r requirements.txt
+
+
+Key Dependencies:
+- qiskit>=1.0
+- pyscf>=2.5
+- qiskit-aer
+- qiskit-nature
+- matplotlib
+- numpy
+
+## 5. Reproducibility
+All stochastic processes (initialization, measurement sampling, optimizer perturbation) are controlled via fixed random seeds (Seed: 1234) to ensure deterministic trajectories.
+
+## 6. Acknowledge
+- University College London (UCL) Department of Physics.
+- IBM Quantum for providing access to cloud-based runtime primitives.
+- Preliminary drafts of the documentation were edited for clarity using LLM tools; all data and analysis are original work.
+
+## 7. Licensce
+This project is licensed under the MIT License - see the LICENSE file for details.
