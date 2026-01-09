@@ -12,7 +12,7 @@ from vqe.vqe_runner import VQERunner
 from vqe.optimizers.scipy_opt import get_optimizer
 from qiskit_algorithms import NumPyMinimumEigensolver
 
-print("🧲 Starting TFIM Field Scan...")
+print("  Starting TFIM Field Scan...")
 
 # 1. Experiment Parameters
 num_qubits = 4
@@ -60,4 +60,4 @@ plt.grid(True, alpha=0.3)
 # Save figure
 output_path = 'results/tfim/figures/tfim_scan.png'
 plt.savefig(output_path)
-print(f"\n✅ Graph saved to {output_path}")
+print(f"\n  Graph saved to {output_path}")

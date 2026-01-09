@@ -12,7 +12,7 @@ from vqe.ansatz.ucc_like import get_uccsd_ansatz
 from vqe.vqe_runner import VQERunner
 from vqe.optimizers.scipy_opt import get_optimizer
 
-print("🧪 Starting Ansatz Comparison Experiment...")
+print("Starting Ansatz Comparison Experiment...")
 
 # We will look at just one difficult point (stretched bond)
 # At equilibrium (0.735), both are easy. At 1.5 or 2.0, it gets harder!
@@ -24,7 +24,7 @@ qubit_op, problem = get_h2_hamiltonian(distance)
 nuc_rep = problem.nuclear_repulsion_energy
 
 # 2. Run TwoLocal (Heuristic)
-print("\n🔵 Running TwoLocal (Hardware Efficient)...")
+print("\n Running TwoLocal (Hardware Efficient)...")
 ansatz_tl = get_twolocal_ansatz(qubit_op.num_qubits, reps=1)
 optimizer = get_optimizer("COBYLA", maxiter=200)
 
@@ -34,7 +34,7 @@ E_tl = result_tl['optimal_value'] + nuc_rep
 print(f"   TwoLocal Energy: {E_tl:.5f} Ha")
 
 # 3. Run UCCSD (Chemistry Inspired)
-print("\n🟢 Running UCCSD (Physics Inspired)...")
+print("\n Running UCCSD (Physics Inspired)...")
 ansatz_ucc = get_uccsd_ansatz(problem)
 # UCCSD is harder to optimize, so we give it SPSA or just more COBYLA steps
 optimizer_ucc = get_optimizer("COBYLA", maxiter=200)
@@ -49,7 +49,7 @@ from qiskit_algorithms import NumPyMinimumEigensolver
 solver = NumPyMinimumEigensolver()
 result_exact = solver.compute_minimum_eigenvalue(qubit_op)
 E_exact = result_exact.eigenvalue.real + nuc_rep
-print(f"\n⚫ Exact Energy:    {E_exact:.5f} Ha")
+print(f"\n Exact Energy:    {E_exact:.5f} Ha")
 
 # 5. Plot Convergence Comparison
 plt.figure(figsize=(10, 6))

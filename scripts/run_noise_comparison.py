@@ -14,7 +14,7 @@ from vqe.optimizers.spsa import get_spsa_optimizer
 from vqe.backends.noisy import get_noisy_estimator
 from qiskit_algorithms import NumPyMinimumEigensolver
 
-print("🧪 Starting Noise Resilience Experiment...")
+print("  Starting Noise Resilience Experiment...")
 print("    Comparing COBYLA vs. SPSA on a noisy backend.")
 
 # 1. Setup Physics (H2 at equilibrium)
@@ -32,10 +32,10 @@ noisy_estimator = get_noisy_estimator(depolarizing_prob=noise_level)
 solver = NumPyMinimumEigensolver()
 result_exact = solver.compute_minimum_eigenvalue(qubit_op)
 E_exact = result_exact.eigenvalue.real + nuc_rep
-print(f"⚫ Exact Energy: {E_exact:.5f} Ha")
+print(f"  Exact Energy: {E_exact:.5f} Ha")
 
 # 4. Run COBYLA (The "Standard" Optimizer)
-print("\n🔵 Running COBYLA (Sensitive to noise)...")
+print("\n  Running COBYLA (Sensitive to noise)...")
 # Decompose the ansatz into basic gates that Aer can handle
 ansatz_base = get_twolocal_ansatz(qubit_op.num_qubits, reps=1)
 ansatz = ansatz_base.decompose().decompose()  # Double decompose to get to basic gates
@@ -47,7 +47,7 @@ E_cobyla = result_cobyla['optimal_value'] + nuc_rep
 print(f"   COBYLA Final: {E_cobyla:.5f} Ha")
 
 # 5. Run SPSA (The "Noise-Robust" Optimizer)
-print("\n🟢 Running SPSA (Designed for noise)...")
+print("\n  Running SPSA (Designed for noise)...")
 # SPSA needs more iterations because it's stochastic, but each step is cheaper
 optimizer_spsa = get_spsa_optimizer(maxiter=200) 
 
@@ -75,5 +75,5 @@ plt.grid(True, alpha=0.3)
 
 save_path = 'results/h2/figures/noise_comparison.png'
 plt.savefig(save_path)
-print(f"\n✅ Graph saved to {save_path}")
+print(f"\n  Graph saved to {save_path}")
 print("   Observation: SPSA should look 'jumpy' but trend lower than COBYLA.")
