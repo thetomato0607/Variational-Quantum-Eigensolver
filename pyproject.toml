@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vqe"
+version = "0.1.0"
+description = "Benchmarking VQE ansatz strategies (UCCSD vs. TwoLocal) for molecular H2 on simulated NISQ backends."
+authors = [
+    { name = "Frankie Lam", email = "yuilonlam0607@gmail.com" },
+]
+requires-python = ">=3.9"
+dependencies = [
+    "qiskit==1.2.4",
+    "qiskit-nature==0.7.2",
+    "qiskit-algorithms==0.3.1",
+    "qiskit-aer==0.15.1",
+    "pyscf==2.7.0",
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "matplotlib==3.9.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -5,7 +5,7 @@ Contact: yuilonlam0607@gmail.com
 
 ## 1. Introduction
 
-This repository contains the source code and experimental data for benchmarking the Variational Quantum Eigensolver (VQE) on Noisy Intermediate-Scale Quantum (NISQ) architectures. The project investigates the critical trade-offs between ansatz expressibility (UCCSD vs. TwoLocal) and measurement overhead for the Hydrogen molecule ($H_2$) across its dissociation curve ($0.5\text{\AA}$ to $2.5\text{\AA}$)1.The study explicitly isolates failure modes in the bond-dissociation regime ($R=1.5\text{\AA}$) and quantifies the "noise floor" of current hardware using the IBM Quantum Runtime environment2.
+This repository contains the source code and experimental data for benchmarking the Variational Quantum Eigensolver (VQE) on Noisy Intermediate-Scale Quantum (NISQ) architectures. The project investigates the critical trade-offs between ansatz expressibility (UCCSD vs. TwoLocal) and measurement overhead for the Hydrogen molecule ($H_2$) across its dissociation curve ($0.5\text{\AA}$ to $2.5\text{\AA}$). The study explicitly isolates failure modes in the bond-dissociation regime ($R=1.5\text{\AA}$) and quantifies the "noise floor" using a local Aer depolarizing-noise simulator standing in for hardware noise.
    
 
 ## 2. Key Experiments & Findings
@@ -24,9 +24,9 @@ Under simulated noise models ($\sigma=0.02$)
 - COBYLA: Converges fast but traps in local minima due to noise sensitivity.
 - SPSA: Exhibits high variance but successfully escapes local minima, achieving a lower final energy ($-1.1167$ Ha) than COBYLA.
 
-4. Hardware Validation
-Executed on IBM Quantum cloud backend.
-- Noise Floor: A systematic error of ~20 mHa remains even with optimal stochastic strategies, representing the limit of unmitigated hardware.
+4. Simulated Hardware Noise
+Executed on a local Qiskit Aer simulator using a depolarizing-noise model (`src/vqe/backends/noisy.py`), not on real IBM Quantum hardware.
+- Noise Floor: A systematic energy error remains even with optimal stochastic strategies under this noise model, representing the limit of unmitigated noise in the simulated setting.
 
 
 ## 3. Repository Structure
@@ -103,12 +103,12 @@ Key Dependencies:
 - numpy
 
 ## 5. Reproducibility
-All stochastic processes (initialization, measurement sampling, optimizer perturbation) are controlled via fixed random seeds (Seed: 1234) to ensure deterministic trajectories.
+Only the noisy-simulation backend is currently seeded: `src/vqe/backends/noisy.py` sets `estimator.options.seed_simulator = 42` on the Aer noise sampler. Ansatz parameter initialization and SPSA's perturbation sampling (`src/vqe/optimizers/spsa.py`) do not currently take a seed, so runs that exercise those paths are not fully deterministic.
 
 ## 6. Acknowledge
 - University College London (UCL) Department of Physics.
 - IBM Quantum for providing access to cloud-based runtime primitives.
 - Preliminary drafts of the documentation were edited for clarity using LLM tools; all data and analysis are original work.
 
-## 7. Licensce
+## 7. License
 This project is licensed under the MIT License - see the LICENSE file for details.
