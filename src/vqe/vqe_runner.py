@@ -1,3 +1,5 @@
+"""Thin wrapper around qiskit-algorithms' VQE that records the energy history."""
+
 from typing import Any, Dict, List
 
 from qiskit_algorithms import VQE
@@ -5,6 +7,16 @@ from qiskit_algorithms import VQE
 from .backends.ideal import get_ideal_estimator
 
 class VQERunner:
+    """Run VQE and record the energy at every optimizer evaluation.
+
+    Args:
+        hamiltonian: Qubit operator to minimise (electronic part only for H2).
+        ansatz: Parameterised circuit.
+        optimizer: A qiskit-algorithms optimizer.
+        estimator: V1 Estimator; defaults to ``get_ideal_estimator()``.
+        verbose: Print progress while optimising.
+        print_every: Print interval in evaluations (clamped to at least 1).
+    """
     def __init__(
         self,
         hamiltonian,
@@ -24,16 +36,24 @@ class VQERunner:
         self.print_every = max(1, print_every)
 
     def callback(self, eval_count, params, mean, std):
-        """Standard callback to track convergence."""
-        # Store just the energy value for plotting
+        """Record one energy evaluation and optionally print progress.
+
+        qiskit-algorithms passes estimator metadata as the fourth argument; it is
+        named ``std`` here but unused.
+        """
         self.history.append(mean)
         if self.verbose and eval_count is not None:
             if eval_count % self.print_every == 0 or eval_count == 1:
                 print(f"   Iter {eval_count}: Energy = {mean:.5f} Ha")
 
     def run(self) -> Dict[str, Any]:
-        """Executes the VQE algorithm."""
-        self.history = []  # Reset history
+        """Run VQE from scratch, resetting ``history``.
+
+        Returns:
+            Dict with ``optimal_value`` (electronic energy; nuclear repulsion not
+            included), ``optimal_params`` and ``history``.
+        """
+        self.history = []
         
         vqe = VQE(
             estimator=self.estimator,

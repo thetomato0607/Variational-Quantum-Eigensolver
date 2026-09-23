@@ -1,3 +1,5 @@
+# AI-assisted (Claude, da5aa23): versions pinned with Claude; qiskit-algorithms and
+# qiskit-aer were added because the code imports them.
 qiskit==1.2.4
 qiskit-nature==0.7.2
 qiskit-algorithms==0.3.1

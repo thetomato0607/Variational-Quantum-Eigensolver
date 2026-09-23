@@ -1,3 +1,8 @@
+"""Scan the H2 dissociation curve: VQE (TwoLocal + COBYLA) vs exact diagonalisation.
+
+Run from the repo root; writes results/h2/figures/dissociation_curve.png.
+"""
+
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -18,13 +23,15 @@ distances = [0.5, 0.735, 1.0, 1.5, 2.0, 2.5]
 vqe_energies = []
 exact_energies = []
 
+# Known issue: this is a V2 estimator, which qiskit-algorithms 0.3.1's VQE
+# rejects, so this script fails with the pinned versions (see backends/ideal.py).
 estimator = StatevectorEstimator()
 optimizer = COBYLA(maxiter=100)
 
 for d in distances:
     print(f"\n--- Distance: {d} Å ---")
     
-    # 1. Get Physics (Using your new module!)
+    # 1. Electronic Hamiltonian; nuclear repulsion is added separately below.
     H_op, problem = get_h2_hamiltonian(d)
     nuc_rep = problem.nuclear_repulsion_energy
     

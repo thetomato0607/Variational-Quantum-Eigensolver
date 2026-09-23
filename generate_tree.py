@@ -1,6 +1,9 @@
+"""Print the repository tree (dev helper for drafting the README structure section)."""
+
 import os
 
 def generate_tree(startpath):
+    """Print ``startpath`` as an ASCII tree, skipping the ignore lists below."""
     # --------------------------------------------------------------------------
     # 🚫 IGNORE LIST: Add your virtual env folder name here (e.g., 'env', 'venv')
     # --------------------------------------------------------------------------
@@ -9,7 +12,7 @@ def generate_tree(startpath):
         'venv', 'env', '.venv', 'virtualenv',  # Virtual Environments
         'dist', 'build', '*.egg-info',         # Python build artifacts
         '__init__.py',                         # Optional: hide init files to save space
-        'site-packages', 'lib', 'bin', 'include', 'share' # Library internals
+        'site-packages', 'lib', 'bin', 'include', 'share'  # Library internals
         'archive_offline'
     }
     

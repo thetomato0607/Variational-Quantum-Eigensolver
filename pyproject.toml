@@ -1,3 +1,4 @@
+# AI-assisted (Claude, da5aa23): this file was restored (it was empty) with Claude.
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"

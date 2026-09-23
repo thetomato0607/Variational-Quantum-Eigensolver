@@ -1,3 +1,8 @@
+"""Compare COBYLA and SPSA on H2 under a depolarizing noise model.
+
+Run from the repo root; writes results/h2/figures/noise_comparison.png.
+"""
+
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -24,7 +29,7 @@ qubit_op, problem = get_h2_hamiltonian(distance)
 nuc_rep = problem.nuclear_repulsion_energy
 
 # 2. Setup Noise Model (Depolarizing Noise)
-noise_level = 0.02  # 2% error rate per gate (pretty high!)
+noise_level = 0.02  # 1-qubit gates; get_noisy_estimator applies 10x (20%) to CX.
 print(f"--- Noise Level: {noise_level*100}% Depolarizing Error ---")
 noisy_estimator = get_noisy_estimator(depolarizing_prob=noise_level)
 
@@ -36,9 +41,10 @@ print(f"  Exact Energy: {E_exact:.5f} Ha")
 
 # 4. Run COBYLA (The "Standard" Optimizer)
 print("\n  Running COBYLA (Sensitive to noise)...")
-# Decompose the ansatz into basic gates that Aer can handle
+# Decompose so the noise model sees gate-level instructions; this yields
+# r, u1, h and cx gates, of which only u1 and cx carry noise.
 ansatz_base = get_twolocal_ansatz(qubit_op.num_qubits, reps=1)
-ansatz = ansatz_base.decompose().decompose()  # Double decompose to get to basic gates
+ansatz = ansatz_base.decompose().decompose()
 optimizer_cobyla = get_optimizer("COBYLA", maxiter=100)
 
 runner_cobyla = VQERunner(qubit_op, ansatz, optimizer_cobyla, estimator=noisy_estimator)
@@ -48,7 +54,7 @@ print(f"   COBYLA Final: {E_cobyla:.5f} Ha")
 
 # 5. Run SPSA (The "Noise-Robust" Optimizer)
 print("\n  Running SPSA (Designed for noise)...")
-# SPSA needs more iterations because it's stochastic, but each step is cheaper
+# SPSA gets more iterations: each step is a cheap, noisy gradient estimate.
 optimizer_spsa = get_spsa_optimizer(maxiter=200) 
 
 runner_spsa = VQERunner(qubit_op, ansatz, optimizer_spsa, estimator=noisy_estimator)

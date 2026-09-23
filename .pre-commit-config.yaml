@@ -1,3 +1,4 @@
+# AI-assisted (Claude, da5aa23): this file was written (it was empty) with Claude.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0

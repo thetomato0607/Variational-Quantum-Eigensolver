@@ -1,10 +1,16 @@
+"""Result persistence helpers."""
+
 import json
 import os
 import numpy as np
 from datetime import datetime
 
 def save_results(data_dict, folder="results", filename="experiment"):
-    """Saves dictionary to JSON with timestamp."""
+    """Write ``data_dict`` to ``<folder>/<filename>_<timestamp>.json``.
+
+    Only top-level NumPy values are converted to lists; NumPy arrays nested
+    deeper will make ``json.dump`` fail.
+    """
     os.makedirs(folder, exist_ok=True)
     
     # Convert numpy types for JSON serialization

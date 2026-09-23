@@ -1,3 +1,8 @@
+"""Scan the TFIM transverse field g: VQE vs exact diagonalisation on a 4-qubit chain.
+
+Run from the repo root; writes results/tfim/figures/tfim_scan.png.
+"""
+
 import sys
 import os
 import matplotlib.pyplot as plt

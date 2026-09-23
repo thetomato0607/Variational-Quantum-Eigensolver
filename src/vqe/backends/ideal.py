@@ -1,6 +1,11 @@
+"""Noise-free estimator backend."""
+
+# AI-assisted (Claude, 6645992): swapped the V2 StatevectorEstimator for the V1
+# Estimator (this import and the return value below) to fix a VQE crash.
 from qiskit.primitives import Estimator
 
 def get_ideal_estimator():
+    """Return an exact V1 ``Estimator``, the default backend for ``VQERunner``."""
     # Note: qiskit_algorithms.VQE (pinned to 0.3.1) calls estimator.run() with
     # the legacy V1 positional signature (circuits, observables, parameters),
     # which the V2 StatevectorEstimator does not accept (it expects PUBs).

@@ -112,3 +112,12 @@ Only the noisy-simulation backend is currently seeded: `src/vqe/backends/noisy.p
 
 ## 7. License
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 8. AI assistance
+
+Parts of this repository were written or changed with Claude, Anthropic's AI assistant. Affected code is marked in place with comments of the form `AI-assisted (Claude, <commit>)`; list them with `git grep -n "AI-assisted"`.
+
+- `da5aa23`: `pyproject.toml`, `requirements.txt` pins, `.pre-commit-config.yaml`, README accuracy fixes, removal of unrelated `vqc/` and `archive_offline/` folders.
+- `ccab99a`: `.github/workflows/tests.yml`.
+- `6645992`: `src/vqe/backends/ideal.py` switched to the V1 `Estimator` to fix a VQE crash.
+- The commit that added this section: docstrings and explanatory comments across the code.

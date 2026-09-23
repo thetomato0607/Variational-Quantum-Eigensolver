@@ -1,3 +1,8 @@
+"""Compare TwoLocal and UCCSD convergence for H2 at a stretched bond (1.5 angstrom).
+
+Run from the repo root; writes results/h2/figures/ansatz_comparison.png.
+"""
+
 import sys
 import os
 import matplotlib.pyplot as plt
@@ -14,8 +19,8 @@ from vqe.optimizers.scipy_opt import get_optimizer
 
 print("Starting Ansatz Comparison Experiment...")
 
-# We will look at just one difficult point (stretched bond)
-# At equilibrium (0.735), both are easy. At 1.5 or 2.0, it gets harder!
+# Stretched bond: static correlation makes this point hard for heuristic ansatze,
+# whereas both ansatze are easy near equilibrium (0.735).
 distance = 1.5
 print(f"--- Analyzing H2 at Bond Length: {distance} Å ---")
 
@@ -36,7 +41,7 @@ print(f"   TwoLocal Energy: {E_tl:.5f} Ha")
 # 3. Run UCCSD (Chemistry Inspired)
 print("\n Running UCCSD (Physics Inspired)...")
 ansatz_ucc = get_uccsd_ansatz(problem)
-# UCCSD is harder to optimize, so we give it SPSA or just more COBYLA steps
+# Same COBYLA budget as TwoLocal, so the comparison is like-for-like.
 optimizer_ucc = get_optimizer("COBYLA", maxiter=200)
 
 runner_ucc = VQERunner(qubit_op, ansatz_ucc, optimizer_ucc)
@@ -44,7 +49,7 @@ result_ucc = runner_ucc.run()
 E_ucc = result_ucc['optimal_value'] + nuc_rep
 print(f"   UCCSD Energy:    {E_ucc:.5f} Ha")
 
-# 4. Compare with Exact
+# 4. Exact diagonalisation as the reference
 from qiskit_algorithms import NumPyMinimumEigensolver
 solver = NumPyMinimumEigensolver()
 result_exact = solver.compute_minimum_eigenvalue(qubit_op)
