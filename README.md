@@ -32,92 +32,62 @@ Executed on a local Qiskit Aer simulator using a depolarizing-noise model (`src/
 ## 3. Repository Structure
 ```text
 Variational-Quantum-Eigensolver/
-├── src/
-│   ├── vqe/
-│   │   ├── measurement.py
-│   │   ├── plotting.py
-│   │   ├── config.py
-│   │   ├── metrics.py
-│   │   ├── utils.py
-│   │   ├── vqe_runner.py
-│   │   ├── hamiltonians/
-│   │   │   ├── tfim.py
-│   │   │   ├── h2.py
-│   │   ├── ansatz/
-│   │   │   ├── ucc_like.py
-│   │   │   ├── hardware_efficient.py
-│   │   ├── optimizers/
-│   │   │   ├── spsa.py
-│   │   │   ├── scipy_opt.py
-│   │   ├── backends/
-│   │   │   ├── shot_based.py
-│   │   │   ├── noisy.py
-│   │   │   ├── ideal.py
-├── scripts/
-│   ├── run_h2_scan.py
-│   ├── run_tfim_grid.py
-│   ├── run_ansatz_comparison.py
-│   ├── run_noise_comparison.py
-│   ├── plot_benchmark.py
-├── results/
-│   ├── h2/
-│   │   ├── figures/
-│   │   │   ├── accuracy_benchmark.png
-│   │   │   ├── noise_comparison.png
-│   │   │   ├── dissociation_curve.png
-│   │   │   ├── ansatz_comparison.png
-│   ├── tfim/
-│       ├── figures/
-│           ├── tfim_scan.png
-├── tests/
-│   ├── test_vqe_smoke.py
-│   ├── test_hamiltonians.py
-│   ├── test_expectation.py
-│   ├── test_ansatz.py
-├── requirements.txt
-├── README.md
+├── src/vqe/               # importable package
+│   ├── hamiltonians/      # H2 (PySCF, STO-3G) and TFIM qubit Hamiltonians
+│   ├── ansatz/            # TwoLocal (hardware-efficient) and UCCSD
+│   ├── backends/          # ideal, shot-based and noisy (Aer) estimators
+│   ├── optimizers/        # COBYLA and SPSA factories
+│   ├── vqe_runner.py      # VQE wrapper that records the energy history
+│   ├── metrics.py, plotting.py, measurement.py, utils.py, config.py
+├── scripts/               # one script per figure; run from the repo root
+├── results/h2/figures/    # H2 figures
+├── results/tfim/figures/  # TFIM figure
+├── tests/                 # pytest suite
+├── .github/workflows/     # CI: tests + lint
+├── pyproject.toml         # package metadata and pinned dependencies
+└── requirements.txt       # the same pins, for pip install -r
 ```
 
 ## 4. Installation & Dependencies
-To ensure scientific reproducibility, this project uses specific versions of Qiskit and PySCF.
+Requires Python 3.11 (the version CI tests) on Linux or macOS; PySCF has no Windows wheels, so use WSL on Windows. All dependencies are pinned in `pyproject.toml`.
 
-Clone the repository:
+```bash
 git clone https://github.com/thetomato0607/Variational-Quantum-Eigensolver.git
 cd Variational-Quantum-Eigensolver
-
-
-Create a virtual environment (Recommended):
-python -m venv vqe_env
-source vqe_env/bin/activate  # On Windows: vqe_env\Scripts\activate
-
-Install dependencies:
-pip install -r requirements.txt
-
-
-Key Dependencies:
-- qiskit>=1.0
-- pyscf>=2.5
-- qiskit-aer
-- qiskit-nature
-- matplotlib
-- numpy
+python -m venv .venv
+source .venv/bin/activate        # Windows (WSL): same command
+pip install -e .                 # installs the vqe package and pinned dependencies
+pip install pytest && pytest tests/
+```
 
 ## 5. Reproducibility
-Only the noisy-simulation backend is currently seeded: `src/vqe/backends/noisy.py` sets `estimator.options.seed_simulator = 42` on the Aer noise sampler. Ansatz parameter initialization and SPSA's perturbation sampling (`src/vqe/optimizers/spsa.py`) do not currently take a seed, so runs that exercise those paths are not fully deterministic.
+Run every script from the repository root; each writes its figure to the path shown.
 
-## 6. Acknowledge
+| Figure / number in section 2 | Command | Status |
+|---|---|---|
+| `results/tfim/figures/tfim_scan.png` | `python scripts/run_tfim_grid.py` | Runs |
+| `results/h2/figures/ansatz_comparison.png`; TwoLocal error at 1.5 Å, iteration counts | `python scripts/run_ansatz_comparison.py` | Runs; the TwoLocal error varies between runs because the initial point is unseeded (one re-run gave ~90 mHa) |
+| `results/h2/figures/dissociation_curve.png` | `python scripts/run_h2_scan.py` | **Currently fails** with the pinned versions: it passes a V2 estimator to qiskit-algorithms' VQE |
+| `results/h2/figures/noise_comparison.png` | `python scripts/run_noise_comparison.py` | **Currently fails** for the same reason (Aer `EstimatorV2`) |
+| `results/h2/figures/accuracy_benchmark.png`; SPSA −1.1167 Ha | `python scripts/plot_benchmark.py` | Plots hard-coded energies from an earlier noisy-simulator run that is not recorded here |
+| UCCSD chemical accuracy at equilibrium | — | No script in this repository runs UCCSD at 0.735 Å |
+
+Only the noisy-simulation backend is seeded: `src/vqe/backends/noisy.py` sets `estimator.options.seed_simulator = 42` on the Aer noise sampler. Ansatz parameter initialization and SPSA's perturbation sampling (`src/vqe/optimizers/spsa.py`) do not take a seed, so runs that exercise those paths are not fully deterministic.
+
+## 6. Acknowledgements
 - University College London (UCL) Department of Physics.
-- IBM Quantum for providing access to cloud-based runtime primitives.
-- Preliminary drafts of the documentation were edited for clarity using LLM tools; all data and analysis are original work.
+- AI tools were used for parts of the documentation and code; section 8 lists every AI-assisted change.
 
 ## 7. License
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## 8. AI assistance
 
-Parts of this repository were written or changed with Claude, Anthropic's AI assistant. Affected code is marked in place with comments of the form `AI-assisted (Claude, <commit>)`; list them with `git grep -n "AI-assisted"`.
+Parts of this repository were written or changed with AI assistants. Affected code is marked in place with comments of the form `AI-assisted (<tool>, <commit>)`; list them with `git grep -n "AI-assisted"`.
 
-- `da5aa23`: `pyproject.toml`, `requirements.txt` pins, `.pre-commit-config.yaml`, README accuracy fixes, removal of unrelated `vqc/` and `archive_offline/` folders.
-- `ccab99a`: `.github/workflows/tests.yml`.
-- `6645992`: `src/vqe/backends/ideal.py` switched to the V1 `Estimator` to fix a VQE crash.
-- The commit that added this section: docstrings and explanatory comments across the code.
+- `2902ae0` (OpenAI Codex, merged via PR #1): `VQERunner` logging controls (`verbose`, `print_every`) and type hints.
+- `da5aa23` (Claude): `pyproject.toml`, `requirements.txt` pins, `.pre-commit-config.yaml`, README accuracy fixes, removal of unrelated `vqc/` and `archive_offline/` folders.
+- `ccab99a` (Claude): `.github/workflows/tests.yml`.
+- `6645992` (Claude): `src/vqe/backends/ideal.py` switched to the V1 `Estimator` to fix a VQE crash.
+- `531911f` (Claude): docstrings and explanatory comments across the code.
+- The commit after `531911f` (Claude): README corrections, removal of the one-off `setup_project.sh` and `generate_tree.py` helpers, and relabelling of the accuracy benchmark from "Cloud"/"Hardware Validation" to simulator.

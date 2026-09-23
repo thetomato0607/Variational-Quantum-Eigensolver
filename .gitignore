@@ -5,5 +5,5 @@ __pycache__/
 vqe_env/
 .vscode/
 .DS_Store
-setup_project.sh
 src/vqe.egg-info/
+.pytest_cache/

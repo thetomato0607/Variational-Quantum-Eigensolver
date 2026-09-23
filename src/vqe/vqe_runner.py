@@ -6,6 +6,8 @@ from qiskit_algorithms import VQE
 
 from .backends.ideal import get_ideal_estimator
 
+# AI-assisted (Codex, 2902ae0 via PR #1): the verbose/print_every options, the
+# progress printing in callback() and the type hints.
 class VQERunner:
     """Run VQE and record the energy at every optimizer evaluation.
 
